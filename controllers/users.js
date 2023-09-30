@@ -18,7 +18,6 @@ function hashPassword(password) {
   return bcrypt.hash(password, saltRounds);
 }
 
-
 async function loginUser(req, res) {
   try {
     const email = req.body.email;
@@ -26,7 +25,7 @@ async function loginUser(req, res) {
     const user = await User.findOne({ email: email });
 
     const isPasswordOk = await bcrypt.compare(password, user.password);
-  
+
     if (!isPasswordOk) {
       res.status(403).send({ message: "Mot de passe incorrect" });
     }
