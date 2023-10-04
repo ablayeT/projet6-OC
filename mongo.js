@@ -1,6 +1,6 @@
 //database
 const mongoose = require("mongoose");
-const validateurUnique = require("mongoose-unique-validator");
+const uniquevalidator = require("mongoose-unique-validator");
 
 const password = process.env.DB_PASSWORD;
 const username = process.env.DB_USERNAME;
@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true }, // refuser quelqu'un qui a la meme email
   password: { type: String, required: true },
 });
-userSchema.plugin(validateurUnique);
+userSchema.plugin(uniquevalidator);
 
 const User = mongoose.model("User", userSchema);
 
