@@ -12,7 +12,7 @@ function userIdentification(req, res, next) {
 
     jwt.verify(token, process.env.JWT_PASSWORD, (err, decoded) => {
       if (err) return res.status(403).send({ message: "Token invalid" + err });
-      next();
+      next(); 
     });
   } catch (error) {
     return res.status(500).json({ erro: "Erreur lors de la requête!" });
