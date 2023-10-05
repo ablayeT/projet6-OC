@@ -14,6 +14,5 @@ function creerFilename(req, file) {
   return fileName;
 }
 const upload = multer({ storage });
-//const upload  = multer({ storage });
 
 module.exports = { upload };

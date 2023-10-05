@@ -1,8 +1,8 @@
-const { User } = require("../mongo");
+const { User } = require("../models/mongo");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-async function createUser(req, res) {
+async function signupUser(req, res) {
   try {
     const { email, password } = req.body;
     const hashedPassword = await hashPassword(password);
@@ -41,4 +41,4 @@ function creerToken(email) {
   return jwt.sign({ email: email }, jwtPassword, { expiresIn: "24h" });
 }
 
-module.exports = { createUser, loginUser };
+module.exports = { signupUser, loginUser };

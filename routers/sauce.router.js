@@ -1,7 +1,7 @@
 const express = require("express");
 const {
   getSauces,
-  creerSauce,
+  createSauce,
   getSaucesById,
   deleteSauces,
   modifySauces,
@@ -11,11 +11,12 @@ const {
 // Middleware
 const { upload } = require("../middleware/multer");
 const { userIdentification } = require("../middleware/auth");
+
 const sauceRouter = express.Router();
 sauceRouter.use(userIdentification);
 
 sauceRouter.get("/", getSauces);
-sauceRouter.post("/", upload.single("image"), creerSauce);
+sauceRouter.post("/", upload.single("image"), createSauce);
 // les :id indiquent que l'id est variable
 sauceRouter.get("/:id", getSaucesById);
 sauceRouter.delete("/:id", deleteSauces);

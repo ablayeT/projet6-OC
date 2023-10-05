@@ -1,7 +1,5 @@
 const { ServerResponse } = require("http");
 const mongoose = require("mongoose");
-const { userInfo } = require("os");
-const { isErrored } = require("stream");
 const { unlink } = require("fs").promises; // supprime quelque chose
 
 const itemSchema = new mongoose.Schema({
@@ -21,8 +19,6 @@ const itemSchema = new mongoose.Schema({
 const Item = mongoose.model("Item", itemSchema);
 
 function getSauces(req, res) {
-  //pourt tout supprimer dans la base de donnée.
-  // Item.deleteMany({}).then(console.log).catch(console.error);
   console.log("le token a été validé nous sommes dans getSauces");
   //identifierUser(req, res);
   //console.log("le token a l'aire bon", decoded);
@@ -40,30 +36,17 @@ function getItemSauce(req, res) {
   const { id } = req.params;
   return Item.findById(id);
 }
+
 function getSaucesById(req, res) {
   getItemSauce(req, res)
     .then((product) => checkClientResponse(product, res))
     .catch((err) => res.status(500).send(err));
-  /*try {
-    const { id } = req.params; // recupere l'id dans l'url
-    const item = await Item.findById(id);
-    res.send(item);
-  } catch (error) {
-    res.status(500).send(error);
-  }*/
 }
-/**
- * 
- function getSaucesById(req, res) {
-  const {id} = req.params.id
-}
- */
 
 function deleteSauces(req, res) {
   const { id } = req.params;
   // suppression envoyée mongo
   Item.findByIdAndDelete(id)
-
     // notification de succés au client
     .then((product) => checkClientResponse(product, res))
     .then((item) => deleteImage(item))
@@ -93,10 +76,6 @@ function deleteImage(product) {
   //.....split("/").at(-1) = supprime le dernier élément
   return unlink("images/" + imageToDelete);
 }
-/*function  deleteImage(product) {
-  if (product == null) return;
-  console.log("DEKET IMAGE", product);
-}*/
 
 function makePayload(isNewImage, req) {
   console.log("isNewImage:", isNewImage);
@@ -119,7 +98,7 @@ function checkClientResponse(product, res) {
   return Promise.resolve(res.status(200).send(product)).then(() => product);
 }
 
-async function creerSauce(req, res) {
+async function createSauce(req, res) {
   const { body, file } = req;
   const { fileName } = file;
   const sauce = JSON.parse(body.sauce);
@@ -170,7 +149,6 @@ function resetLike(product, userId, res) {
   const { usersLiked, usersDisliked } = product;
   if ([usersLiked, usersDisliked].every((arr) => arr.includes(userId)))
     return Promise.reject("User seems to have liked both ways");
-
   if (![usersLiked, usersDisliked].some((arr) => arr.includes(userId)))
     return Promise.reject("users seems to have not voted");
 
@@ -196,17 +174,9 @@ function incrementLike(product, userId, like) {
   return product;
 }
 
-/*function decrementLlike(product, userId) {
-  const { usersDisliked } = product;
-  if (usersDisliked.includes(userId)) return;
-  usersDisliked.push(userId);
-  product.dislikes++;
-  console.log("product after dislikes", product);
-}*/
-
 module.exports = {
   getSauces,
-  creerSauce,
+  createSauce,
   getSaucesById,
   deleteSauces,
   modifySauces,
