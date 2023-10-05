@@ -1,27 +1,9 @@
 const { ServerResponse } = require("http");
 const mongoose = require("mongoose");
-const { unlink } = require("fs").promises; // supprime quelque chose
-
-const itemSchema = new mongoose.Schema({
-  userId: { type: String, required: true },
-  name: { type: String, required: true },
-  manufacturer: { type: String, required: true },
-  description: { type: String, required: true },
-  mainPepper: { type: String, required: true },
-  imageUrl: { type: String, required: true },
-  heat: { type: Number, required: true },
-  likes: { type: Number, required: false, default: 0 },
-  dislikes: { type: Number, required: false, default: 0 },
-  usersLiked: { type: [String], required: false },
-  usersDisliked: { type: [String], required: false },
-});
-// fabrication du model
-const Item = mongoose.model("Item", itemSchema);
+const { unlink } = require("fs").promises; // supprime quelque checkClientResponse
+const Item = require("../models/sauceModels");
 
 function getSauces(req, res) {
-  console.log("le token a été validé nous sommes dans getSauces");
-  //identifierUser(req, res);
-  //console.log("le token a l'aire bon", decoded);
   Item.find({})
     .then((items) => {
       res.status(200).json(items);
@@ -39,62 +21,97 @@ function getItemSauce(req, res) {
 
 function getSaucesById(req, res) {
   getItemSauce(req, res)
-    .then((product) => checkClientResponse(product, res))
-    .catch((err) => res.status(500).send(err));
+    .then((product) => {
+      if (!product) {
+        return res
+          .status(404)
+          .send({ message: "Produit non trouvé dans la base de données" });
+      }
+      res.status(200).send(product);
+    })
+    .catch((err) => {
+      console.error(err);
+      res
+        .status(500)
+        .send({ message: "Erreur lors de la récupération du produit" });
+    });
 }
 
 function deleteSauces(req, res) {
   const { id } = req.params;
-  // suppression envoyée mongo
+
   Item.findByIdAndDelete(id)
-    // notification de succés au client
-    .then((product) => checkClientResponse(product, res))
-    .then((item) => deleteImage(item))
-    .then((res) => console.log("FILE DELETED", res))
-    .catch((error) => res.status(500).send({ message: error }));
+    .then((product) => {
+      if (!product) {
+        return res
+          .status(404)
+          .send({ message: "Produit non trouvé dans la base de données" });
+      }
+      return deleteImage(product).then(() => {
+        res.status(200).send({ message: "Produit supprimé avec succès" });
+      });
+    })
+    .catch((error) => {
+      console.error(error);
+      res
+        .status(500)
+        .send({ message: "Erreur lors de la suppression du produit" });
+    });
 }
 
 function modifySauces(req, res) {
-  const {
-    params: { id },
-  } = req;
-
+  const { id } = req.params;
   const isNewImage = req.file != null;
   const payload = makePayload(isNewImage, req);
 
-  // Mettre à jour la base de donnée
   Item.findByIdAndUpdate(id, payload)
-    .then((dbResponse) => checkClientResponse(dbResponse, res))
-    .then((product) => deleteImage(product))
-    .then((res) => console.log("FILE DELETED", res))
-    .catch((err) => console.error("Probème lors de la modification", err));
+    .then((dbResponse) => {
+      if (!dbResponse) {
+        return res
+          .status(404)
+          .send({ message: "Produit non trouvé dans la base de données" });
+      }
+      return deleteImage(dbResponse).then(() => {
+        console.log("FILE DELETED");
+        res.status(200).send({ message: "Produit modifié avec succès" });
+      });
+    })
+    .catch((err) => {
+      console.error("Problème lors de la modification", err);
+      res
+        .status(500)
+        .send({ message: "Erreur lors de la modification du produit" });
+    });
 }
-function deleteImage(product) {
+
+async function deleteImage(product) {
   if (product == null) return;
-  console.log("DELETE IMAGE", product);
-  const imageToDelete = product.imageUrl.split("/").at(-1);
-  //.....split("/").at(-1) = supprime le dernier élément
-  return unlink("images/" + imageToDelete);
+
+  const imageToDelete = product.imageUrl.split("/").pop(); // Obteneir le nom du fichier à partir de l'URL
+  const imagePath = "images/" + imageToDelete;
+
+  try {
+    await unlink(imagePath);
+    console.log("FILE DELETED");
+  } catch (error) {
+    console.error("Erreur lors de la suppression du fichier :", error);
+  }
 }
 
 function makePayload(isNewImage, req) {
-  console.log("isNewImage:", isNewImage);
   if (!isNewImage) return req.body;
   const payload = JSON.parse(req.body.sauce);
   payload.imageUrl = makeImageUrl(req, req.file.fileName);
-  console.log("NOUVELLE IMAGE A GERER");
-  console.log("Voici le payload:", payload);
+
   return payload;
 }
 
 function checkClientResponse(product, res) {
   if (product == null) {
-    console.log("RIEN A MODIFIER");
     return res
       .status(404)
       .send({ message: "Produit non trouvé dans la base de donnée" });
   }
-  console.log("All GOOD, UPDATING;", product);
   return Promise.resolve(res.status(200).send(product)).then(() => product);
 }
 
@@ -147,20 +164,26 @@ function updateLike(product, like, userId, res) {
 }
 function resetLike(product, userId, res) {
   const { usersLiked, usersDisliked } = product;
+
+  // Vérifie si l'utilisateur a déjà aimé et disliké la sauce
   if ([usersLiked, usersDisliked].every((arr) => arr.includes(userId)))
     return Promise.reject("User seems to have liked both ways");
+
+  // Vérifie si l'utilisateur n'a pas voté pour la sauce
   if (![usersLiked, usersDisliked].some((arr) => arr.includes(userId)))
     return Promise.reject("users seems to have not voted");
 
+  // Si l'utilisateur a déjà aimé la sauce, réduit le nombre de likes et le retire de la liste des utilisateurs qui ont aimé
   if (usersLiked.includes(userId)) {
     --product.likes;
     product.usersLiked = product.usersLiked.filter((id) => id !== userId);
   } else {
+    // Si l'utilisateur a déjà disliké la sauce, réduit le nombre de dislikes et le retire de la liste des utilisateurs qui ont disliké
     --product.dislikes;
     product.usersDisliked = product.usersDisliked.filter((id) => id !== userId);
   }
-  console.log("RESET AFTER:", product);
-  return product;
+
+  return product; // Retourne l'objet modifié (sauce)
 }
 
 function incrementLike(product, userId, like) {
