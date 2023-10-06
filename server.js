@@ -5,7 +5,9 @@ const port = 3000;
 
 const cors = require("cors");
 
-// Middleware
+// Middleware$
+//conection to database
+require("./models/mongo");
 
 app.use(cors());
 app.use(express.json());
