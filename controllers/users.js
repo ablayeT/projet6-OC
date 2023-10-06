@@ -3,7 +3,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 async function signupUser(req, res) {
-  console.log("signup en cours");
   try {
     const { email, password } = req.body;
     const hashedPassword = await hashPassword(password);

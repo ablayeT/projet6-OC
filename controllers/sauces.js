@@ -72,7 +72,6 @@ function modifySauces(req, res) {
           .send({ message: "Produit non trouvé dans la base de données" });
       }
       return deleteImage(dbResponse).then(() => {
-        console.log("FILE DELETED");
         res.status(200).send({ message: "Produit modifié avec succès" });
       });
     })
@@ -92,7 +91,7 @@ async function deleteImage(product) {
 
   try {
     await unlink(imagePath);
-    console.log("FILE DELETED");
+    console.log("Fichier supprimé avec succès :", imagePath);
   } catch (error) {
     console.error("Erreur lors de la suppression du fichier :", error);
   }

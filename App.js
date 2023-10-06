@@ -1,4 +1,3 @@
-
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -7,7 +6,6 @@ const cors = require("cors");
 
 app.use(cors());
 app.use(express.json());
-
 
 // Routes
 const { sauceRouter } = require("./routers/sauce.router");
@@ -22,7 +20,7 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
-// Servez des fichiers statiques (images)
-app.use("/images", express.static(path.join(__dirname, "src/images")));
+//gestion des fichiers statiques (images)
+app.use("/images", express.static(path.join(__dirname, "/images")));
 
-module.exports = { app };
+module.exports = { app, express };
